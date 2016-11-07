@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+    <title>ThreatReponse Volatility Container</title>
+    <link rel="stylesheet" href="/static/css/xterm.css"/>
+    <link rel="stylesheet" href="/static/css/fullscreen.css"/>
+    <link rel="stylesheet" href="/static/css/style.css"/>
+    <script src="/static/js/xterm.js"></script>
+    <script src="/static/js/attach.js"></script>
+    <script src="/static/js/fit.js"></script>
+    <script src="/static/js/fullscreen.js"></script>
+</head>
+<body>
+<div id="terminal-container"></div>
+<script src="/static/js/main.js" defer></script>
+<script>
+    var term,
+            protocol,
+            socketURL,
+            socket;
+    var terminalContainer = document.getElementById('terminal-container');
+    socketURL = "ws://192.168.31.241:8013/attach/?id=f3354771e4b1"
+    createTerminal(socketURL);
+    function createTerminal(socketURL) {
+        while (terminalContainer.children.length) {
+            terminalContainer.removeChild(terminalContainer.children[0]);
+        }
+        term = new Terminal({
+            cursorBlink: true
+
+        });
+        socket = new WebSocket(socketURL);
+        term.open(terminalContainer);
+        term.fit();
+        term.writeln('Welcome to the volatility shell for threatresponse');
+        term.writeln('All of your selected assets have been copied to /analysis');
+        socket.onopen = runRealTerminal;
+        socket.onclose = runFakeTerminal;
+        socket.onerror = runFakeTerminal;
+    }
+
+
+    function runRealTerminal() {
+        term.attach(socket);
+        term._initialized = true;
+    }
+
+    function runFakeTerminal() {
+        if (term._initialized) {
+            return;
+        }
+
+        term._initialized = true;
+
+        var shellprompt = '$ ';
+
+        term.prompt = function () {
+            term.write('\r\n' + shellprompt);
+        };
+
+        term.writeln('Welcome to xterm.js');
+        term.writeln('This is a local terminal emulation, without a real terminal in the back-end.');
+        term.writeln('Type some keys and commands to play around.');
+        term.writeln('');
+        term.prompt();
+
+        term.on('key', function (key, ev) {
+            var printable = (
+                    !ev.altKey && !ev.altGraphKey && !ev.ctrlKey && !ev.metaKey
+            );
+
+            if (ev.keyCode == 13) {
+                term.prompt();
+            } else if (ev.keyCode == 8) {
+                /*
+                 * Do not delete the prompt
+                 */
+                if (term.x > 2) {
+                    term.write('\b \b');
+                }
+            } else if (printable) {
+                term.write(key);
+            }
+        });
+
+        term.on('paste', function (data, ev) {
+            term.write(data);
+        });
+    }
+</script>
+</body>
+</html>
