@@ -1,0 +1,100 @@
+<html>
+	<head>
+		<script src="https://code.highcharts.com/highcharts.js"></script>
+	</head>
+	<body>
+		<div id="cpustats" style="height: 400px"></div>
+		<div id="netstats" style="height: 400px"></div>
+		<div id="memstats" style="height: 400px"></div>
+		<script>
+			var cpuchart = Highcharts.chart('cpustats', {
+				credits:{
+					text: ' OPS',
+					href: 'http://www..com',
+				},
+				title: {text:'CPU利用'},
+				yAxis: {
+					title: {
+						text:'CPU'
+					}
+				},	
+				xAxis: {
+					type: 'datetime',
+				},
+				series: [{
+					name: 'total_usage',
+					data: [0,0,0,0,0,0,0,0,0,0,0,0,0]
+				}]
+			});
+
+			var netchart = Highcharts.chart('netstats', {
+				credits:{
+					text: ' OPS',
+					href: 'http://www..com',
+				},
+				title: {text:'网络流量'},
+				yAxis: {
+					title: {
+						text:'网络'
+					}
+				},	
+				xAxis: {
+					type: 'datetime',
+				},
+				series: [{
+					name: '入带宽',
+					data: [0,0,0,0,0,0,0,0,0,0,0,0,0]
+				},{
+					name: '出带宽',
+					data: [0,0,0,0,0,0,0,0,0,0,0,0,0]
+				}]
+			});
+
+			var memchart = Highcharts.chart('memstats', {
+				credits:{
+					text: ' OPS',
+					href: 'http://www..com',
+				},
+				title: {text:'内存使用'},
+				yAxis: {
+					title: {
+						text:'内存'
+					}
+				},	
+				xAxis: {
+					type: 'datetime',
+				},
+				series: [{
+					name: 'usage',
+					data: [0,0,0,0,0,0,0,0,0,0,0,0,0]
+				}]
+			});
+
+			ws = new WebSocket("ws://127.0.0.1:8013/stats");
+
+			var stats = 1;
+			var tmpdata = '';
+			ws.onmessage = function(e){
+				try {
+					if (stats ==1){
+						var data = e.data;
+					}else{
+						var data = tmpdata+e.data;
+					}
+					var jsondata = JSON.parse(data);
+					var cpustat = jsondata['cpu_stats']['cpu_usage'];
+					var netstat = jsondata['network'];
+					var memstat = jsondata['memory_stats'];
+					cpuchart.series[0].addPoint(cpustat.total_usage,true,true);
+					netchart.series[0].addPoint(netstat.rx_bytes,true,true);
+					netchart.series[1].addPoint(netstat.tx_bytes,true,true);
+					memchart.series[0].addPoint(memstat.usage,true,true);
+					stats = 1;
+				}catch (e){
+					stats = 0;
+					tmpdata = data;
+				}
+			}
+		</script>
+	</body>
+</html>
